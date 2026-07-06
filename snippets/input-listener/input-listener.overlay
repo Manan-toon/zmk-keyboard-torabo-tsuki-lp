@@ -17,12 +17,21 @@
     status = "okay";
     device = <&pointing_device>;
 
-    // 通常時（カーソル移動）: 1.5倍速。stockは 1 1、遅くは 1 2 等
-    input-processors = <&zip_xy_scaler 3 2>;
+    // XY軸を反転（この基板の右ボール実装向け）→ その後 1.5倍速
+    //   もし片方だけ直したい場合は下記フラグを調整:
+    //     左右だけ反転 → (INPUT_TRANSFORM_X_INVERT)
+    //     上下だけ反転 → (INPUT_TRANSFORM_Y_INVERT)
+    //     90度回転してる → (INPUT_TRANSFORM_XY_SWAP) を追加
+    input-processors =
+        <&zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>,
+        <&zip_xy_scaler 3 2>;
 
-    // layer 3 を踏んでいる間だけ移動をスクロールに変換
+    // layer 3 を踏んでいる間だけ移動をスクロールに変換（向き揃えのため同じ反転を先頭に）
     scroller {
         layers = <3>;
-        input-processors = <&zip_xy_to_scroll_mapper>, <&zip_wheel_scaler 1 8>;
+        input-processors =
+            <&zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>,
+            <&zip_xy_to_scroll_mapper>,
+            <&zip_wheel_scaler 1 8>;
     };
 };
