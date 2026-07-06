@@ -1,37 +1,22 @@
-#include <zephyr/dt-bindings/input/input-event-codes.h>
-
-/ {
-    input_processors {
-        // スクロール速度を下げるための自前ホイールスケーラー（縦スクロール用）
-        zip_wheel_scaler: zip_wheel_scaler {
-            compatible = "zmk,input-processor-scaler";
-            #input-processor-cells = <2>;
-            type = <INPUT_EV_REL>;
-            codes = <INPUT_REL_WHEEL>;
-            track-remainders;
-        };
-    };
-};
-
 &pointing_listener {
     status = "okay";
     device = <&pointing_device>;
 
-    // XY軸を反転（この基板の右ボール実装向け）→ その後 1.5倍速
-    //   もし片方だけ直したい場合は下記フラグを調整:
-    //     左右だけ反転 → (INPUT_TRANSFORM_X_INVERT)
-    //     上下だけ反転 → (INPUT_TRANSFORM_Y_INVERT)
-    //     90度回転してる → (INPUT_TRANSFORM_XY_SWAP) を追加
+    // カーソル移動: XY反転（この基板の右ボール実装向け）→ 1.5倍速
+    //   向きが片軸だけ逆なら (INPUT_TRANSFORM_X_INVERT) 等に、
+    //   90度回転してるなら INPUT_TRANSFORM_XY_SWAP を追加
     input-processors =
         <&zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>,
         <&zip_xy_scaler 3 2>;
 
-    // layer 3 を踏んでいる間だけ移動をスクロールに変換（向き揃えのため同じ反転を先頭に）
+    // layer index 3,4（＝体感 layer 2,3）でスクロール
+    //   zip_xy_to_scroll_mapper: 上下→縦、左右→横スクロール両対応
+    //   zip_scroll_scaler 1 8: 縦横まとめて 1/8 に減速（数字を大きくするほど遅く）
     scroller {
-        layers = <3>;
+        layers = <3 4>;
         input-processors =
             <&zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>,
             <&zip_xy_to_scroll_mapper>,
-            <&zip_wheel_scaler 1 8>;
+            <&zip_scroll_scaler 1 8>;
     };
 };
